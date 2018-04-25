@@ -1,3 +1,6 @@
+# #24972 Artery internals
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.compress.InboundCompression.confirmAdvertisement")
+
 # #23732 SSLEngineProvider, changes to internal classes
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.SSLSettings.getOrCreateContext")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.SSLSettings.createSecureRandom")
