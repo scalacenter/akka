@@ -126,7 +126,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
       val flowFactory = () ⇒ {
 
-        val flow =
+        def flow(controlIdleKillSwitch: OptionVal[SharedKillSwitch]) =
           Flow[ByteString]
             .via(Flow.lazyInitAsync(() ⇒ {
               // only open the actual connection if any new messages are sent
@@ -134,6 +134,8 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
                 TcpOutbound_Connected,
                 s"${outboundContext.remoteAddress.host.get}:${outboundContext.remoteAddress.port.get} " +
                   s"/ ${streamName(streamId)}")
+              if (controlIdleKillSwitch.isDefined)
+                outboundContext.asInstanceOf[Association].setControlIdleKillSwitch(controlIdleKillSwitch)
               Future.successful(
                 Flow[ByteString]
                   .prepend(Source.single(TcpFraming.encodeConnectionHeader(streamId)))
@@ -148,13 +150,9 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
           val controlIdleKillSwitch = KillSwitches.shared("outboundControlStreamIdleKillSwitch")
           Flow[ByteString]
             .via(controlIdleKillSwitch.flow)
-            .via(flow)
-            .mapMaterializedValue { _ ⇒
-              outboundContext.asInstanceOf[Association].setControlIdleKillSwitch(OptionVal.Some(controlIdleKillSwitch))
-              NotUsed
-            }
+            .via(flow(OptionVal.Some(controlIdleKillSwitch)))
         } else {
-          flow
+          flow(OptionVal.None)
         }
       }
 

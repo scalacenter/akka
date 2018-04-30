@@ -771,15 +771,16 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, settings.Advanced.HandshakeTimeout,
-        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval))
+        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval, Duration.Undefined))
       .viaMat(createEncoder(bufferPool, streamId))(Keep.right)
   }
 
   def outboundControl(outboundContext: OutboundContext): Sink[OutboundEnvelope, (OutboundControlIngress, Future[Done])] = {
-
+    val livenessProbeInterval = (settings.Advanced.QuarantineIdleOutboundAfter / 10)
+      .max(settings.Advanced.HandshakeRetryInterval)
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, settings.Advanced.HandshakeTimeout,
-        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval))
+        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval, livenessProbeInterval))
       .via(new SystemMessageDelivery(outboundContext, system.deadLetters, settings.Advanced.SystemMessageResendInterval,
         settings.Advanced.SysMsgBufferSize))
       // note that System messages must not be dropped before the SystemMessageDelivery stage
