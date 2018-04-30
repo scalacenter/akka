@@ -453,10 +453,10 @@ private[remote] class Association(
   // OutboundContext
   override def quarantine(reason: String): Unit = {
     val uid = associationState.uniqueRemoteAddressValue().map(_.uid)
-    quarantine(reason, uid)
+    quarantine(reason, uid, harmless = false)
   }
 
-  @tailrec final def quarantine(reason: String, uid: Option[Long]): Unit = {
+  @tailrec final def quarantine(reason: String, uid: Option[Long], harmless: Boolean): Unit = {
     uid match {
       case Some(u) ⇒
         val current = associationState
@@ -466,22 +466,32 @@ private[remote] class Association(
               val newState = current.newQuarantined()
               if (swapState(current, newState)) {
                 // quarantine state change was performed
-                log.warning(
-                  "Association to [{}] with UID [{}] is irrecoverably failed. UID is now quarantined and all " +
-                    "messages to this UID will be delivered to dead letters. " +
-                    "Remote actorsystem must be restarted to recover from this situation. Reason: {}",
-                  remoteAddress, u, reason)
-                transport.system.eventStream.publish(QuarantinedEvent(remoteAddress, u))
+                if (harmless) {
+                  log.info(
+                    "Association to [{}] having UID [{}] has been stopped. All " +
+                      "messages to this UID will be delivered to dead letters. Reason: {}",
+                    remoteAddress, u, reason)
+                  transport.system.eventStream.publish(HarmlessQuarantinedEvent(UniqueAddress(remoteAddress, u), reason))
+                } else {
+                  log.warning(
+                    "Association to [{}] with UID [{}] is irrecoverably failed. UID is now quarantined and all " +
+                      "messages to this UID will be delivered to dead letters. " +
+                      "Remote actorsystem must be restarted to recover from this situation. Reason: {}",
+                    remoteAddress, u, reason)
+                  transport.system.eventStream.publish(QuarantinedEvent(remoteAddress, u))
+                }
                 flightRecorder.loFreq(Transport_Quarantined, s"$remoteAddress - $u")
                 clearOutboundCompression()
                 clearInboundCompression(u)
                 // end delivery of system messages to that incarnation after this point
                 send(ClearSystemMessageDelivery(current.incarnation), OptionVal.None, OptionVal.None)
-                // try to tell the other system that we have quarantined it
-                sendControl(Quarantined(localAddress, peer))
+                if (!harmless) {
+                  // try to tell the other system that we have quarantined it
+                  sendControl(Quarantined(localAddress, peer))
+                }
                 setupStopQuarantinedTimer()
               } else
-                quarantine(reason, uid) // recursive
+                quarantine(reason, uid, harmless) // recursive
             }
           case Some(peer) ⇒
             log.info(

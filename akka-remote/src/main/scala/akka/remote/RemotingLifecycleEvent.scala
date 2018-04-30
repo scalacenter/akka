@@ -111,6 +111,14 @@ final case class QuarantinedEvent(address: Address, longUid: Long) extends Remot
 }
 
 @SerialVersionUID(1L)
+final case class HarmlessQuarantinedEvent(uniqueAddress: UniqueAddress, reason: String) extends RemotingLifecycleEvent {
+  override def logLevel: Logging.LogLevel = Logging.InfoLevel
+  override val toString: String =
+    s"Association to [${uniqueAddress.address}] having UID [${uniqueAddress.uid}] has been stopped. All " +
+      s"messages to this UID will be delivered to dead letters. Reason: $reason "
+}
+
+@SerialVersionUID(1L)
 final case class ThisActorSystemQuarantinedEvent(localAddress: Address, remoteAddress: Address) extends RemotingLifecycleEvent {
   override def logLevel: LogLevel = Logging.WarningLevel
   override val toString: String = s"The remote system ${remoteAddress} has quarantined this system ${localAddress}."

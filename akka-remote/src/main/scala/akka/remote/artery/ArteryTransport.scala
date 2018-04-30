@@ -735,8 +735,12 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   }
 
   override def quarantine(remoteAddress: Address, uid: Option[Long], reason: String): Unit = {
+    quarantine(remoteAddress, uid, reason, harmless = false)
+  }
+
+  def quarantine(remoteAddress: Address, uid: Option[Long], reason: String, harmless: Boolean): Unit = {
     try {
-      association(remoteAddress).quarantine(reason, uid)
+      association(remoteAddress).quarantine(reason, uid, harmless)
     } catch {
       case ShuttingDown ⇒ // silence it
     }
@@ -823,7 +827,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
               if (inControlStream)
                 system.scheduler.scheduleOnce(settings.Advanced.ShutdownFlushTimeout) {
                   if (!isShutdown)
-                    quarantine(from.address, Some(from.uid), "ActorSystem terminated")
+                    quarantine(from.address, Some(from.uid), "ActorSystem terminated", harmless = true)
                 }(materializer.executionContext)
             case OptionVal.None ⇒
               log.error("Expected sender for ActorSystemTerminating message from [{}]", from)

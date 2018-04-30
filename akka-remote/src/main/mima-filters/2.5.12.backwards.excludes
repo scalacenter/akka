@@ -2,6 +2,8 @@
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.compress.InboundCompression.confirmAdvertisement")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.OutboundHandshake.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArteryTransport.terminationHintReplier")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteWatcher.quarantine")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.Association.quarantine")
 
 # #23732 SSLEngineProvider, changes to internal classes
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.SSLSettings.getOrCreateContext")
