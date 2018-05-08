@@ -10,11 +10,9 @@ import akka.dispatch.sysmsg._
 import akka.event.{ EventStream, Logging, LoggingAdapter }
 import akka.event.Logging.Error
 import akka.pattern.pipe
-
 import scala.util.control.NonFatal
 
 import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
-
 import scala.util.control.Exception.Catcher
 import scala.concurrent.Future
 
@@ -29,6 +27,7 @@ import akka.remote.artery.OutboundEnvelope
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.remote.serialization.ActorRefResolveThreadLocalCache
 import akka.remote.artery.tcp.ArteryTcpTransport
+import akka.serialization.Serialization
 
 /**
  * INTERNAL API
@@ -474,6 +473,21 @@ private[akka] class RemoteActorRefProvider(
   }
 
   def getDefaultAddress: Address = transport.defaultAddress
+
+  // no need for volatile, only intended as cached value, not necessarily a singleton value
+  private var serializationInformationCache: OptionVal[Serialization.Information] = OptionVal.None
+  @InternalApi override private[akka] def serializationInformation: Serialization.Information =
+    serializationInformationCache match {
+      case OptionVal.Some(info) ⇒ info
+      case OptionVal.None ⇒
+        if ((transport eq null) || (transport.defaultAddress eq null))
+          local.serializationInformation // address not know yet
+        else {
+          val info = Serialization.Information(transport.defaultAddress, transport.system)
+          serializationInformationCache = OptionVal.Some(info)
+          info
+        }
+    }
 
   private def hasAddress(address: Address): Boolean =
     address == local.rootPath.address || address == rootPath.address || transport.addresses(address)

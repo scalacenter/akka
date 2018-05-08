@@ -60,7 +60,6 @@ private[remote] class Encoder(
       headerBuilder setVersion version
       headerBuilder setUid uniqueLocalAddress.uid
       private val localAddress = uniqueLocalAddress.address
-      private val serializationInfo = Serialization.Information(localAddress, system)
 
       // lazy init of SerializationExtension to avoid loading serializers before ActorRefProvider has been initialized
       private var _serialization: OptionVal[Serialization] = OptionVal.None
@@ -111,27 +110,21 @@ private[remote] class Encoder(
         }
 
         try {
-          // avoiding currentTransportInformation.withValue due to thunk allocation
-          val oldValue = Serialization.currentTransportInformation.value
-          try {
-            Serialization.currentTransportInformation.value = serializationInfo
+          outboundEnvelope.sender match {
+            case OptionVal.None    ⇒ headerBuilder.setNoSender()
+            case OptionVal.Some(s) ⇒ headerBuilder setSenderActorRef s
+          }
 
-            outboundEnvelope.sender match {
-              case OptionVal.None    ⇒ headerBuilder.setNoSender()
-              case OptionVal.Some(s) ⇒ headerBuilder setSenderActorRef s
-            }
+          val startTime: Long = if (instruments.timeSerialization) System.nanoTime else 0
+          if (instruments.nonEmpty)
+            headerBuilder.setRemoteInstruments(instruments)
 
-            val startTime: Long = if (instruments.timeSerialization) System.nanoTime else 0
-            if (instruments.nonEmpty)
-              headerBuilder.setRemoteInstruments(instruments)
+          MessageSerializer.serializeForArtery(serialization, outboundEnvelope, headerBuilder, envelope)
 
-            MessageSerializer.serializeForArtery(serialization, outboundEnvelope, headerBuilder, envelope)
-
-            if (instruments.nonEmpty) {
-              val time = if (instruments.timeSerialization) System.nanoTime - startTime else 0
-              instruments.messageSent(outboundEnvelope, envelope.byteBuffer.position(), time)
-            }
-          } finally Serialization.currentTransportInformation.value = oldValue
+          if (instruments.nonEmpty) {
+            val time = if (instruments.timeSerialization) System.nanoTime - startTime else 0
+            instruments.messageSent(outboundEnvelope, envelope.byteBuffer.position(), time)
+          }
 
           envelope.byteBuffer.flip()
 

@@ -1,0 +1,2 @@
+# #25067 Serialization.Information
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorRefProvider.serializationInformation")

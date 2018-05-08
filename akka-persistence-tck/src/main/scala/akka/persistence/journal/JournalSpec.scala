@@ -17,9 +17,17 @@ import akka.testkit._
 import com.typesafe.config._
 
 object JournalSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config: Config = ConfigFactory.parseString(
+    s"""
     akka.persistence.publish-plugin-commands = on
+    akka.actor {
+      serializers {
+        persistence-tck-test = "${classOf[TestSerializer].getName}"
+      }
+      serialization-bindings {
+        "${classOf[TestPayload].getName}" = persistence-tck-test
+      }
+    }
     """)
 }
 
@@ -230,5 +238,31 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) with MayVe
         }
       }
     }
+
+    optional(flag = supportsSerialization) {
+      "serialize events" in {
+        val probe = TestProbe()
+        val event = TestPayload(probe.ref)
+        val aw =
+          AtomicWrite(PersistentRepr(payload = event, sequenceNr = 6L, persistenceId = pid, sender = Actor.noSender,
+            writerUuid = writerUuid))
+
+        journal ! WriteMessages(List(aw), probe.ref, actorInstanceId)
+
+        probe.expectMsg(WriteMessagesSuccessful)
+        val Pid = pid
+        val WriterUuid = writerUuid
+        probe.expectMsgPF() {
+          case WriteMessageSuccess(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid), _) ⇒ payload should be(event)
+        }
+
+        journal ! ReplayMessages(6, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
+        receiverProbe.expectMsgPF() {
+          case ReplayedMessage(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid)) ⇒ payload should be(event)
+        }
+        receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 6L))
+      }
+    }
+
   }
 }

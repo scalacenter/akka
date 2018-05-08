@@ -4,7 +4,7 @@
 
 package akka.persistence.snapshot
 
-import akka.persistence.scalatest.OptionalTests
+import akka.persistence.scalatest.{ MayVerb, OptionalTests }
 
 import scala.collection.immutable.Seq
 import akka.actor._
@@ -15,7 +15,18 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
 
 object SnapshotStoreSpec {
-  val config = ConfigFactory.parseString("akka.persistence.publish-plugin-commands = on")
+  val config: Config = ConfigFactory.parseString(
+    s"""
+    akka.persistence.publish-plugin-commands = on
+    akka.actor {
+      serializers {
+        persistence-tck-test = "${classOf[TestSerializer].getName}"
+      }
+      serialization-bindings {
+        "${classOf[TestPayload].getName}" = persistence-tck-test
+      }
+    }
+    """)
 }
 
 /**
@@ -30,7 +41,7 @@ object SnapshotStoreSpec {
  * @see [[akka.persistence.japi.snapshot.JavaSnapshotStoreSpec]]
  */
 abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
-  with OptionalTests with SnapshotStoreCapabilityFlags {
+  with MayVerb with OptionalTests with SnapshotStoreCapabilityFlags {
   implicit lazy val system = ActorSystem("SnapshotStoreSpec", config.withFallback(SnapshotStoreSpec.config))
 
   private var senderProbe: TestProbe = _
@@ -150,6 +161,25 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
       val bigSnapshot = "0" * snapshotByteSizeLimit
       snapshotStore.tell(SaveSnapshot(metadata, bigSnapshot), senderProbe.ref)
       senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) ⇒ md }
+    }
+  }
+
+  "A snapshot store optionally" may {
+    optional(flag = supportsSerialization) {
+      "serialize snapshots" in {
+        val probe = TestProbe()
+        val metadata = SnapshotMetadata(pid, 100)
+        val snap = TestPayload(probe.ref)
+        snapshotStore.tell(SaveSnapshot(metadata, snap), senderProbe.ref)
+        senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) ⇒ md }
+
+        val Pid = pid
+        snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria.Latest, Long.MaxValue), senderProbe.ref)
+        senderProbe.expectMsgPF() {
+          case LoadSnapshotResult(Some(SelectedSnapshot(SnapshotMetadata(Pid, 100, _), payload)), Long.MaxValue) ⇒
+            payload should be(snap)
+        }
+      }
     }
   }
 }
