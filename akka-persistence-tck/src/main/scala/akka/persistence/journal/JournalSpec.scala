@@ -51,6 +51,8 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) with MayVe
   private var senderProbe: TestProbe = _
   private var receiverProbe: TestProbe = _
 
+  override protected def supportsSerialization: CapabilityFlag = true
+
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     senderProbe = TestProbe()

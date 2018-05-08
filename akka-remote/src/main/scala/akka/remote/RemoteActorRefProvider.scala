@@ -481,7 +481,7 @@ private[akka] class RemoteActorRefProvider(
       case OptionVal.Some(info) ⇒ info
       case OptionVal.None ⇒
         if ((transport eq null) || (transport.defaultAddress eq null))
-          local.serializationInformation // address not know yet
+          local.serializationInformation // address not know yet, access before complete init and binding
         else {
           val info = Serialization.Information(transport.defaultAddress, transport.system)
           serializationInformationCache = OptionVal.Some(info)

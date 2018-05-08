@@ -47,6 +47,8 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
   private var senderProbe: TestProbe = _
   private var metadata: Seq[SnapshotMetadata] = Nil
 
+  override protected def supportsSerialization: CapabilityFlag = true
+
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     senderProbe = TestProbe()

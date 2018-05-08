@@ -69,8 +69,8 @@ private[akka] object MessageSerializer {
       if (oldInfo eq null)
         Serialization.currentTransportInformation.value = serialization.serializationInformation
 
-      headerBuilder setSerializer serializer.identifier
-      headerBuilder setManifest Serializers.manifestFor(serializer, message)
+      headerBuilder.setSerializer(serializer.identifier)
+      headerBuilder.setManifest(Serializers.manifestFor(serializer, message))
       envelope.writeHeader(headerBuilder, outboundEnvelope)
 
       serializer match {

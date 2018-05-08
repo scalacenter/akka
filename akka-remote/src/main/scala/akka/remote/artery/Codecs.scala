@@ -57,8 +57,8 @@ private[remote] class Encoder(
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging with OutboundCompressionAccess {
 
       private val headerBuilder = HeaderBuilder.out()
-      headerBuilder setVersion version
-      headerBuilder setUid uniqueLocalAddress.uid
+      headerBuilder.setVersion(version)
+      headerBuilder.setUid(uniqueLocalAddress.uid)
       private val localAddress = uniqueLocalAddress.address
 
       // lazy init of SerializationExtension to avoid loading serializers before ActorRefProvider has been initialized
@@ -105,14 +105,14 @@ private[remote] class Encoder(
 
         // internally compression is applied by the builder:
         outboundEnvelope.recipient match {
-          case OptionVal.Some(r) ⇒ headerBuilder setRecipientActorRef r
+          case OptionVal.Some(r) ⇒ headerBuilder.setRecipientActorRef(r)
           case OptionVal.None    ⇒ headerBuilder.setNoRecipient()
         }
 
         try {
           outboundEnvelope.sender match {
             case OptionVal.None    ⇒ headerBuilder.setNoSender()
-            case OptionVal.Some(s) ⇒ headerBuilder setSenderActorRef s
+            case OptionVal.Some(s) ⇒ headerBuilder.setSenderActorRef(s)
           }
 
           val startTime: Long = if (instruments.timeSerialization) System.nanoTime else 0

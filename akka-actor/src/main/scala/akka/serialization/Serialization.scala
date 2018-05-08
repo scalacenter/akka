@@ -35,7 +35,7 @@ object Serialization {
    * serializing local actor refs, or if serializer library e.g. custom serializer/deserializer in
    * Jackson need access to the current `ActorSystem`.
    */
-  private[akka] val currentTransportInformation = new DynamicVariable[Information](null)
+  @InternalApi private[akka] val currentTransportInformation = new DynamicVariable[Information](null)
 
   class Settings(val config: Config) {
     val Serializers: Map[String, String] = configToMap(config.getConfig("akka.actor.serializers"))
