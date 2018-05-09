@@ -68,9 +68,9 @@ object Serialization {
 
   /**
    * The serialized path of an actorRef, based on the current transport serialization information.
-   * If there is no external address available for the requested address then the systems default
-   * address will be used.
-   * @see [[Serialization#wwithTransportInformation]]
+   * If there is no external address available in the given `ActorRef` then the systems default
+   * address will be used and that is retrieved from the ThreadLocal `Serialization.Information`
+   * that was set with [[Serialization#withTransportInformation]].
    */
   def serializedActorPath(actorRef: ActorRef): String = {
     val path = actorRef.path

@@ -103,13 +103,19 @@ private[remote] class Encoder(
         // without depending on compression tables being in sync when systems are restarted
         headerBuilder.useOutboundCompression(!outboundEnvelope.message.isInstanceOf[ArteryMessage])
 
-        // internally compression is applied by the builder:
-        outboundEnvelope.recipient match {
-          case OptionVal.Some(r) ⇒ headerBuilder.setRecipientActorRef(r)
-          case OptionVal.None    ⇒ headerBuilder.setNoRecipient()
-        }
-
+        // Important to set Serialization.currentTransportInformation because setRecipientActorRef
+        // and setSenderActorRef are using using Serialization.serializedActorPath.
+        // Avoiding currentTransportInformation.withValue due to thunk allocation.
+        val oldInfo = Serialization.currentTransportInformation.value
         try {
+          Serialization.currentTransportInformation.value = serialization.serializationInformation
+
+          // internally compression is applied by the builder:
+          outboundEnvelope.recipient match {
+            case OptionVal.Some(r) ⇒ headerBuilder.setRecipientActorRef(r)
+            case OptionVal.None    ⇒ headerBuilder.setNoRecipient()
+          }
+
           outboundEnvelope.sender match {
             case OptionVal.None    ⇒ headerBuilder.setNoSender()
             case OptionVal.Some(s) ⇒ headerBuilder.setSenderActorRef(s)
@@ -155,6 +161,7 @@ private[remote] class Encoder(
                 pull(in)
             }
         } finally {
+          Serialization.currentTransportInformation.value = oldInfo
           outboundEnvelope match {
             case r: ReusableOutboundEnvelope ⇒ outboundEnvelopePool.release(r)
             case _                           ⇒ // no need to release it

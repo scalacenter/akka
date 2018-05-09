@@ -522,6 +522,9 @@ private[akka] class RemoteActorRef private[akka] (
   deploy:                Option[Deploy])
   extends InternalActorRef with RemoteRef {
 
+  if (path.address.hasLocalScope)
+    throw new IllegalArgumentException(s"Unexpected local address in RemoteActorRef [$this]")
+
   remote match {
     case t: ArteryTransport ⇒
       // detect mistakes such as using "akka.tcp" with Artery
