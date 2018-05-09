@@ -119,7 +119,7 @@ object Dependencies {
       val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
 
       val levelDB = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided" // ApacheV2
-      val levelDBmultiJVM = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided;multi-jvm" // ApacheV2
+      val levelDBmultiJVM = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided" // ApacheV2
       val levelDBNative = "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % "optional;provided" // New BSD
 
       val junit = Compile.junit % "optional;provided;test"

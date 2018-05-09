@@ -3,7 +3,6 @@ import akka.{ParadoxSupport, AutomaticModuleName}
 enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr)
 disablePlugins(MimaPlugin)
 
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import spray.boilerplate.BoilerplatePlugin
 import akka.AkkaBuild._
@@ -114,12 +113,10 @@ lazy val cluster = akkaModule("akka-cluster")
   .settings(
     parallelExecution in Test := false
   )
-  .configs(MultiJvm)
-  .enablePlugins(MultiNodeScalaTest)
 
 
 lazy val clusterMetrics = akkaModule("akka-cluster-metrics")
-  .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm", slf4j % "test->compile")
+  .dependsOn(cluster % "compile->compile;test->test", slf4j % "test->compile")
   .settings(OSGi.clusterMetrics)
   .settings(Dependencies.clusterMetrics)
   .settings(AutomaticModuleName.settings("akka.cluster.metrics"))
@@ -128,8 +125,6 @@ lazy val clusterMetrics = akkaModule("akka-cluster-metrics")
   .settings(
     parallelExecution in Test := false
   )
-  .configs(MultiJvm)
-  .enablePlugins(MultiNodeScalaTest)
 
 lazy val clusterSharding = akkaModule("akka-cluster-sharding")
   // TODO akka-persistence dependency should be provided in pom.xml artifact.
@@ -137,7 +132,7 @@ lazy val clusterSharding = akkaModule("akka-cluster-sharding")
   //      Scope "test" is alright in the pom.xml, but would have been nicer with
   //      provided.
   .dependsOn(
-    cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
+    cluster % "compile->compile;test->test",
     distributedData,
     persistence % "compile->compile",
     clusterTools
@@ -146,17 +141,15 @@ lazy val clusterSharding = akkaModule("akka-cluster-sharding")
   .settings(AutomaticModuleName.settings("akka.cluster.sharding"))
   .settings(OSGi.clusterSharding)
   .settings(Protobuf.settings)
-  .configs(MultiJvm)
-  .enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
+  .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val clusterTools = akkaModule("akka-cluster-tools")
-  .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
+  .dependsOn(cluster % "compile->compile;test->test")
   .settings(Dependencies.clusterTools)
   .settings(AutomaticModuleName.settings("akka.cluster.tools"))
   .settings(OSGi.clusterTools)
   .settings(Protobuf.settings)
-  .configs(MultiJvm)
-  .enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
+  .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val contrib = akkaModule("akka-contrib")
   .dependsOn(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile->compile")
@@ -175,18 +168,15 @@ lazy val contrib = akkaModule("akka-contrib")
                       |support for these modules.
                       |""".stripMargin
   )
-  .configs(MultiJvm)
-  .enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
+  .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
 
 lazy val distributedData = akkaModule("akka-distributed-data")
-  .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
+  .dependsOn(cluster % "compile->compile;test->test")
   .settings(Dependencies.distributedData)
   .settings(AutomaticModuleName.settings("akka.cluster.ddata"))
   .settings(OSGi.distributedData)
   .settings(Protobuf.settings)
-  .configs(MultiJvm)
-  .enablePlugins(MultiNodeScalaTest)
 
 lazy val docs = akkaModule("akka-docs")
   .dependsOn(
@@ -324,8 +314,7 @@ lazy val remoteTests = akkaModule("akka-remote-tests")
   .settings(
     parallelExecution in Test := false
   )
-  .configs(MultiJvm)
-  .enablePlugins(MultiNodeScalaTest, NoPublish)
+  .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
 
 lazy val slf4j = akkaModule("akka-slf4j")
@@ -421,12 +410,10 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
   .disablePlugins(MimaPlugin)
-  .configs(MultiJvm)
-  .enablePlugins(MultiNodeScalaTest)
 
 lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .dependsOn(
-    clusterTyped % "compile->compile;test->test;multi-jvm->multi-jvm",
+    clusterTyped % "compile->compile;test->test",
     persistenceTyped,
     clusterSharding,
     typedTestkit % "test->test",
@@ -439,8 +426,6 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   // To be able to import ContainerFormats.proto
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
   .disablePlugins(MimaPlugin)
-  .configs(MultiJvm)
-  .enablePlugins(MultiNodeScalaTest)
 
 lazy val streamTyped = akkaModule("akka-stream-typed")
   .dependsOn(

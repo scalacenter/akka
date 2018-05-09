@@ -7,7 +7,6 @@ package akka
 import akka.ValidatePullRequest.{ValidatePR, additionalTasks}
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import de.heikoseeberger.sbtheader.{CommentCreator, HeaderPlugin}
-import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys._
 import sbt.Keys._
 import sbt._
 
@@ -18,7 +17,7 @@ trait CopyrightHeader extends AutoPlugin {
   override def trigger = allRequirements
 
   override def projectSettings = Def.settings(
-    Seq(Compile, Test, MultiJvm).flatMap { config =>
+    Seq(Compile, Test).flatMap { config =>
       inConfig(config)(
         Seq(
           headerLicense := Some(HeaderLicense.Custom(headerFor(CurrentYear))),
