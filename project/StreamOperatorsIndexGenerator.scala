@@ -120,6 +120,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     pendingTestCases.get(element).exists(_.contains(opName))
 
   def generateAlphabeticalIndex(dir: SettingKey[File], locate: File ⇒ File) = Def.task[Seq[File]] {
+    val baseDir = Keys.baseDirectory.in(ThisBuild).value
+    val sourceDir = dir.value
     val file = locate(dir.value)
 
     val defs =
@@ -142,7 +144,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
         "akka-stream/src/main/scala/akka/stream/javadsl/FileIO.scala",
       ).flatMap{ f ⇒
         val element = f.split("/")(7).split("\\.")(0)
-        IO.read(new File(f)).split("\n")
+        IO.read(baseDir / f).split("\n")
           .map(_.trim).filter(_.startsWith("def "))
           .map(_.drop(4).takeWhile(c ⇒ c != '[' && c != '(' && c != ':'))
           .filter(op => !isPending(element, op))
