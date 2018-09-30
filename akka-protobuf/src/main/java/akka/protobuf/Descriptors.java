@@ -1544,7 +1544,7 @@ public final class Descriptors {
    * All descriptors except {@code FileDescriptor} implement this to make
    * {@code DescriptorPool}'s life easier.
    */
-  private interface GenericDescriptor {
+  interface GenericDescriptor {
     Message toProto();
     String getName();
     String getFullName();
